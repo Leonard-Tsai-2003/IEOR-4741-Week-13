@@ -1,0 +1,104 @@
+Script started on Tue Nov 24 04:51:21 2026
+
+(base) leonardtsai@Mac hw13 % g++ --version
+Apple clang version 16.0.0 (clang-1600.0.26.6)
+Target: arm64-apple-darwin25.6.0
+Thread model: posix
+InstalledDir: /Library/Developer/CommandLineTools/usr/bin
+(base) leonardtsai@Mac hw13 % g++ -std=c++20 -O0 kernel.cpp -o slow
+(base) leonardtsai@Mac hw13 % ./slow
+checksum=151299320.088155 time_ms=1113.993
+(base) leonardtsai@Mac hw13 % g++ -std=c++20 -O3 -march=native -funroll-loops kernel.cpp -o fast   
+(base) leonardtsai@Mac hw13 % ./fast
+checksum=151299320.088155 time_ms=200.626
+(base) leonardtsai@Mac hw13 % g++ -std=c++20 -O3 -march=native -funroll-loops -Rpass=loop-vectorize kernel.cpp -o fast
+(base) leonardtsai@Mac hw13 % ./fast
+checksum=151299320.088155 time_ms=202.574
+(base) leonardtsai@Mac hw13 % g++ -std=c++20 -O3 -mcpu=native -funroll-loops -Rpass=loop-vectorize -Rpass-missed=loop-vectorize kernel.cpp -o fast_check
+kernel.cpp:35:5: remark: the cost-model indicates that vectorization is not beneficial [-Rpass-missed=loop-vectorize]
+   35 |     for (std::size_t i = 0; i < N; ++i) {
+      |     ^
+kernel.cpp:35:5: remark: the cost-model indicates that interleaving is not beneficial [-Rpass-missed=loop-vectorize]
+kernel.cpp:23:9: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+   23 |         for (std::size_t i = 0; i < a.size(); ++i) {
+      |         ^
+(base) leonardtsai@Mac hw13 % ./fast_check 
+checksum=151299320.088155 time_ms=196.271
+(base) leonardtsai@Mac hw13 % g++ -std=c++20 -O3 -mcpu=native -funroll-loops -ffast-math -Rpass=loop-vectorize kernel.cpp -o fast_math && ./fast_math
+kernel.cpp:23:9: remark: vectorized loop (vectorization width: 4, interleaved count: 4) [-Rpass=loop-vectorize]
+   23 |         for (std::size_t i = 0; i < a.size(); ++i) {
+      |         ^
+checksum=151299381.089299 time_ms=63.451
+(base) leonardtsai@Mac hw13 % g++ -std=c++20 -O3 -mcpu=native -funroll-loops -fprofile-instr-generate kernel.cpp -o fast_pgo_gen
+./fast_pgo_gen
+xcrun llvm-profdata merge -output=default.profdata default.profraw
+g++ -std=c++20 -O3 -mcpu=native -funroll-loops -fprofile-instr-use=default.profdata kernel.cpp -o fast_pgo && ./fast_pgo
+checksum=151299320.088155 time_ms=233.587
+checksum=151299320.088155 time_ms=213.136
+(base) leonardtsai@Mac hw13 % g++ -std=c++20 -O2 kernel.cpp -o test_o2 && ./test_o2
+g++ -std=c++20 -O3 kernel.cpp -o test_o3 && ./test_o3
+g++ -std=c++20 -O3 -mcpu=native -funroll-loops -flto kernel.cpp -o test_lto && ./test_lto
+checksum=151299320.088155 time_ms=190.287
+checksum=151299320.088155 time_ms=189.369
+checksum=151299320.088155 time_ms=192.929
+(base) leonardtsai@Mac hw13 % /usr/bin/time -l ./slow
+/usr/bin/time -l ./fast_pgo
+/usr/bin/time -l ./fast_math
+checksum=151299320.088155 time_ms=1100.833
+        1.11 real         1.09 user         0.00 sys
+             1867776  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                 269  page reclaims
+                  62  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                  39  voluntary context switches
+                  57  involuntary context switches
+         16768322070  instructions retired
+          3759887177  cycles elapsed
+             1474896  peak memory footprint
+checksum=151299320.088155 time_ms=192.356
+        0.19 real         0.19 user         0.00 sys
+             1851392  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                 272  page reclaims
+                   3  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+                  35  involuntary context switches
+          2569900133  instructions retired
+           671125529  cycles elapsed
+             1458512  peak memory footprint
+checksum=151299381.089299 time_ms=60.189
+        0.06 real         0.06 user         0.00 sys
+             1867776  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                 273  page reclaims
+                   3  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+                  29  involuntary context switches
+           910698766  instructions retired
+           211195211  cycles elapsed
+             1474896  peak memory footprint
+Script done on Tue Nov 24 04:54:50 2026
